@@ -125,8 +125,7 @@ func ReplaceImageByName(name, path string) error {
 		return err
 	}
 	// 更新图片路径
-	img.Path = path
-	if err := db.Where(&img).Update("path").Error; err != nil {
+	if err := db.Model(&img).Update("path", path).Error; err != nil {
 		return err
 	}
 	return nil

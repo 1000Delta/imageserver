@@ -23,7 +23,7 @@ import (
 
 const (
 	// TODO 修改路径为配置引入
-	uploadPath = "./uploads/tmp"
+	uploadPath = "./uploads/tmp/"
 )
 
 // 图片列表返回数据
@@ -31,6 +31,12 @@ type RtnJsonImageList struct {
 	RtnJsonBase
 	Total int             `json:"total"`
 	Data  []*models.Image `json:"data"`
+}
+
+// 图片返回数据
+type RtnJsonImage struct {
+	RtnJsonBase
+	Data *models.Image `json:"data"`
 }
 
 // 查询图片 优先级：id > name > 列表
@@ -102,12 +108,13 @@ func ImageUpload(ctx *gin.Context) {
 		return
 	}
 
-	// 保存图片信息到数据库
-	err = models.SaveNewImage(&models.Image{
+	nImg := &models.Image{
 		Name: fh.Filename,
 		Ext:  ext,
 		Path: fPath[1:], // 存储为绝对路径
-	})
+	}
+	// 保存图片信息到数据库
+	err = models.SaveNewImage(nImg)
 
 	if err != nil {
 		log.Printf("Save Image Error: %v", err.Error())
@@ -120,7 +127,10 @@ func ImageUpload(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, &RtnJsonBase{Msg: "ok"})
+	ctx.JSON(http.StatusOK, &RtnJsonImage{
+		RtnJsonBase: RtnJsonBase{Msg: "ok"},
+		Data:        nImg,
+	})
 }
 
 func ImageRemove(ctx *gin.Context) {
@@ -181,7 +191,16 @@ func ImageReplace(ctx *gin.Context) {
 			ctx.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
-		ctx.JSON(http.StatusOK, &RtnJsonBase{Msg: "ok"})
+		var img *models.Image
+		if img, err = models.GetImageByName(name); err != nil {
+			log.Printf("Image replace load new image info error: %v", err.Error())
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, &RtnJsonBase{Msg: "加载信息失败"})
+			return
+		}
+		ctx.JSON(http.StatusOK, &RtnJsonImage{
+			RtnJsonBase: RtnJsonBase{Msg: "ok"},
+			Data:        img,
+		})
 		return
 	}
 	ctx.AbortWithStatusJSON(http.StatusBadRequest, &RtnJsonBase{Msg: "缺失参数"})
