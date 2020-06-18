@@ -1,0 +1,2 @@
+mode = "release"
+MaxMultipartMemory = 100 # MiB
