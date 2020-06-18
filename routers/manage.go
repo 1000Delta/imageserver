@@ -65,7 +65,7 @@ func ImageGet(ctx *gin.Context) {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, &RtnJsonBase{"查询图片信息失败"})
 			return
 		}
-		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/%s", img.Path))
+		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s", img.Path))
 		return
 	}
 	images, err := models.GetImageList()

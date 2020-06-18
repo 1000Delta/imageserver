@@ -101,7 +101,7 @@ func RemoveImageByName(name string) error {
 	if err := db.Where("name = ?", name).First(rmImg).Error; err != nil {
 		return err
 	}
-	if err := RemoveImageInStorage(rmImg.Path); err != nil {
+	if err := RemoveImageInStorage("." + rmImg.Path); err != nil {
 		return err
 	}
 	if err := db.Delete(rmImg).Error; err != nil {
