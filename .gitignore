@@ -1,2 +1,6 @@
 # project configure
 .idea/
+
+# build
+imageserver
+imageserver.exe
