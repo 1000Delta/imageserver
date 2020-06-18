@@ -6,6 +6,10 @@ import (
 	"log"
 )
 
+var (
+	ErrRecordNotFound = gorm.ErrRecordNotFound
+)
+
 func init() {
 	db, err := gorm.Open("sqlite3", "./data/data.db")
 	if err != nil {

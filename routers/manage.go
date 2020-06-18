@@ -1,3 +1,5 @@
+// manage.go
+// 存放图片管理相关的路由逻辑
 package routers
 
 import (
@@ -6,7 +8,6 @@ import (
 	"fmt"
 	"github.com/1000Delta/imageserver/models"
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -18,6 +19,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+)
+
+const (
+	// TODO 修改路径为配置引入
+	uploadPath = "./uploads/tmp"
 )
 
 // 图片列表返回数据
@@ -37,7 +43,7 @@ func ImageGet(ctx *gin.Context) {
 		}
 		img, err := models.GetImageByID(idn)
 		if err != nil {
-			if err == gorm.ErrRecordNotFound {
+			if err == models.ErrRecordNotFound {
 				ctx.AbortWithStatus(http.StatusNotFound)
 				return
 			}
@@ -51,7 +57,7 @@ func ImageGet(ctx *gin.Context) {
 	if name, exist := ctx.GetQuery("name"); exist {
 		img, err := models.GetImageByName(name)
 		if err != nil {
-			if err == gorm.ErrRecordNotFound {
+			if err == models.ErrRecordNotFound {
 				ctx.AbortWithStatus(http.StatusNotFound)
 				return
 			}
@@ -82,21 +88,13 @@ func ImageUpload(ctx *gin.Context) {
 	}
 	ext := filepath.Ext(fh.Filename)
 	// 文件后缀检查
-	switch ext {
-	case ".jpg", ".png", ".bmp":
-	default:
+	if !isImageExtValid(ext) {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, &RtnJsonBase{Msg: "文件后缀类型不支持"})
 		return
 	}
 	// TODO 文件类型检查
-
-	// TODO 修改路径为配置引入
-	rand.Seed(time.Now().Unix())
-	hash := fmt.Sprintf(
-		"%x",
-		md5.Sum([]byte(fmt.Sprintf("%s%d", "imageserver"+fh.Filename, rand.Int()))),
-	)
-	fPath := "./uploads/tmp/" + hash + ext
+	hash := genImageHash(fh.Filename)
+	fPath := uploadPath + hash + ext
 	err = ctx.SaveUploadedFile(fh, fPath)
 	if err != nil {
 		log.Printf("Save file error: %v\n", err.Error())
@@ -137,7 +135,7 @@ func ImageRemove(ctx *gin.Context) {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, &RtnJsonBase{Msg: "删除失败"})
 			return
 		}
-		ctx.Status(http.StatusOK)
+		ctx.JSON(http.StatusOK, &RtnJsonBase{Msg: "ok"})
 		return
 	}
 	if name, exist := ctx.GetQuery("name"); exist {
@@ -146,10 +144,66 @@ func ImageRemove(ctx *gin.Context) {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, &RtnJsonBase{Msg: "删除失败"})
 			return
 		}
-		ctx.Status(http.StatusOK)
+		ctx.JSON(http.StatusOK, &RtnJsonBase{Msg: "ok"})
 		return
 	}
 	ctx.AbortWithStatusJSON(http.StatusBadRequest, &RtnJsonBase{Msg: "缺失参数"})
+}
+
+func ImageReplace(ctx *gin.Context) {
+	if name, exist := ctx.GetQuery("name"); exist {
+		fh, err := ctx.FormFile("image")
+		if err != nil {
+			log.Printf("Image replace get file error: %v", err.Error())
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, &RtnJsonBase{Msg: "上传出错"})
+			return
+		}
+		rand.Seed(time.Now().Unix())
+		ext := filepath.Ext(fh.Filename)
+		if !isImageExtValid(ext) {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, &RtnJsonBase{Msg: "文件类型不支持"})
+			return
+		}
+		hash := genImageHash(fh.Filename)
+		fPath := uploadPath + hash + ext
+		// 更改记录并检查文件名是否有效
+		if err := models.ReplaceImageByName(name, fPath[1:]); err != nil {
+			if err == models.ErrRecordNotFound {
+				ctx.AbortWithStatusJSON(http.StatusBadRequest, &RtnJsonBase{Msg: "指定图片不存在"})
+				return
+			}
+			log.Printf("Image replace update image record error: %v", err.Error())
+			ctx.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+		if err := ctx.SaveUploadedFile(fh, fPath); err != nil {
+			log.Printf("Image replace save uploaded file error: %v", err.Error())
+			ctx.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+		ctx.JSON(http.StatusOK, &RtnJsonBase{Msg: "ok"})
+		return
+	}
+	ctx.AbortWithStatusJSON(http.StatusBadRequest, &RtnJsonBase{Msg: "缺失参数"})
+}
+
+// 文件后缀检查
+func isImageExtValid(ext string) bool {
+	switch ext {
+	// TODO 表驱动替换硬编码
+	case ".jpg", ".png", ".bmp":
+		return true
+	}
+	return false
+}
+
+func genImageHash(v string) string {
+	rand.Seed(time.Now().Unix())
+	hash := fmt.Sprintf(
+		"%x",
+		md5.Sum([]byte(fmt.Sprintf("%s%d", "imageserver"+v, rand.Int()))),
+	)
+	return hash
 }
 
 func imageValidCheck(f io.Reader, t string) (bool, error) {
@@ -182,7 +236,7 @@ func imageDecode(path string) (*image.Image, error) {
 	case ".png":
 		img, err = png.Decode(f)
 	default:
-		return nil, errors.New("Unknown image type")
+		return nil, errors.New("unknown image type")
 	}
 	if err != nil {
 		return nil, err

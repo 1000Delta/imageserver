@@ -11,6 +11,7 @@ func route() {
 	app.GET("/image", routers.ImageGet)
 	app.POST("/image", routers.ImageUpload)
 	app.DELETE("/image", routers.ImageRemove)
+	app.PUT("/image", routers.ImageReplace)
 
 	// static
 	app.Static("/uploads", "./uploads")
