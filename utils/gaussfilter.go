@@ -54,6 +54,8 @@ func GaussFuzzy(img image.Image, radius, routines int, sigma float64) image.Imag
 		go func(in image.Image, out *image.RGBA64, segN int) {
 			defer wg.Done()
 			var xBegin = xSegment * segN
+			var xMax = in.Bounds().Max.X - 1
+			var yMax = in.Bounds().Max.Y - 1
 			b := out.Bounds()
 			for x := b.Min.X; x < b.Max.X; x++ {
 				for y := b.Min.Y; y < b.Max.Y; y++ {
@@ -65,16 +67,22 @@ func GaussFuzzy(img image.Image, radius, routines int, sigma float64) image.Imag
 							var r, g, b, a uint32
 							switch {
 							case i < 0 && j < 0:
-								//cs = append(cs, in.At(-i, -j))
 								r, g, b, a = in.At(-i, -j).RGBA()
+							case i > xMax && j > yMax:
+								r, g, b, a = in.At(2*xMax-i, 2*yMax-j).RGBA()
+							case i < 0 && j > yMax:
+								r, g, b, a = in.At(-i, 2*yMax-j).RGBA()
+							case i > xMax && j < 0:
+								r, g, b, a = in.At(2*xMax-i, -j).RGBA()
 							case i < 0:
-								//cs = append(cs, in.At(-i, j))
 								r, g, b, a = in.At(-i, j).RGBA()
 							case j < 0:
-								//cs = append(cs, in.At(i, -j))
 								r, g, b, a = in.At(i, -j).RGBA()
+							case i > xMax:
+								r, g, b, a = in.At(2*xMax-i, j).RGBA()
+							case j > yMax:
+								r, g, b, a = in.At(i, 2*yMax-j).RGBA()
 							default:
-								//cs = append(cs, in.At(i, j))
 								r, g, b, a = in.At(i, j).RGBA()
 							}
 							gx := i - x - xBegin
