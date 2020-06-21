@@ -12,7 +12,7 @@ func gaussFuncDD(x, y int, sigma float64) float64 {
 }
 
 // 对图像进行高斯模糊, radius是卷积核半径, 为 1 时只包含自身; routines 为线程数, 一半采用硬件线程数较好; sigma 为高斯方程权重
-func GaussFuzzy(img image.Image, radius, routines int, sigma float64) image.Image {
+func GaussianBlur(img image.Image, radius, routines int, sigma float64) image.Image {
 	//var coreLen = radius*2 - 1
 	b := img.Bounds()
 	gaussWeights := make([][]float64, radius) // 坐标数

@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-func ImageGaussFuzzy(ctx *gin.Context) {
+func ImageGaussianBlur(ctx *gin.Context) {
 	id, exist := ctx.GetQuery("id")
 	if !exist {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, &RtnJsonBase{Msg: "缺失图片id"})
@@ -36,20 +36,20 @@ func ImageGaussFuzzy(ctx *gin.Context) {
 	}
 	imgInfo, err := models.GetImageByID(idn)
 	if err != nil {
-		log.Printf("ImageGaussFuzzy get image info error: %v", err.Error())
+		log.Printf("ImageGaussianBlur get image info error: %v", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, &RtnJsonBase{Msg: "读取图片信息失败"})
 		return
 	}
 	img, err := models.GetImageInStorage("." + imgInfo.Path)
 	if err != nil {
-		log.Printf("ImageGaussFuzzy get image in storage error: %v", err.Error())
+		log.Printf("ImageGaussianBlur get image in storage error: %v", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, &RtnJsonBase{Msg: "读取图片失败"})
 		return
 	}
-	nImg := utils.GaussFuzzy(img, radius, 1, sigma)
+	nImg := utils.GaussianBlur(img, radius, 1, sigma)
 	err = png2.Encode(ctx.Writer, nImg)
 	if err != nil {
-		log.Printf("ImageGaussFuzzy encode png error: %v", err.Error())
+		log.Printf("ImageGaussianBlur encode png error: %v", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, &RtnJsonBase{Msg: "图片编码失败"})
 		return
 	}

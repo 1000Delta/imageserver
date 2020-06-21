@@ -19,8 +19,8 @@ func TestGaussFuzzyMultiThreads(t *testing.T) {
 	}
 	cpus := runtime.GOMAXPROCS(0)
 	t.Logf("cpus: %d\n", cpus)
-	nImg := utils.GaussFuzzy(img, coreRadius, cpus, gaussSigma)
-	//nImg := GaussFuzzy(img, coreRadius, 1)
+	nImg := utils.GaussianBlur(img, coreRadius, cpus, gaussSigma)
+	//nImg := GaussianBlur(img, coreRadius, 1)
 	nf, err := os.Create("./test_fuzzy_out_multi_threads.jpg")
 	if err != nil {
 		log.Fatal(err)
@@ -38,7 +38,7 @@ func TestGaussFuzzy(t *testing.T) {
 	}
 	cpus := 1
 	t.Logf("cpus: %d", cpus)
-	nImg := utils.GaussFuzzy(img, coreRadius, cpus, gaussSigma)
+	nImg := utils.GaussianBlur(img, coreRadius, cpus, gaussSigma)
 	nf, err := os.Create("./test_fuzzy_out.jpg")
 	if err != nil {
 		log.Fatal(err)
