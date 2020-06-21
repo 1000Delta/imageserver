@@ -1,6 +1,9 @@
 package models
 
 import (
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"os"
 	"time"
 )
@@ -129,4 +132,17 @@ func ReplaceImageByName(name, path string) error {
 		return err
 	}
 	return nil
+}
+
+func GetImageInStorage(path string) (image.Image, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	img, _, err := image.Decode(f)
+	if err != nil {
+		return nil, err
+	}
+	return img, nil
 }
